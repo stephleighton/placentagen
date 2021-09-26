@@ -18,6 +18,15 @@ def calc_plug_shear(mu,Dp,porosity,radius, length,flow,resistance,r_val):
     shear_at_wall = (np.sqrt(gamma)*flow*resistance/length)* (special.iv(1,np.sqrt(gamma/K) * radius)/special.iv(0,np.sqrt(gamma/K) * radius))
     return shear,shear_at_wall
 
+
+def calc_channel_resistance(mu,length,channel_radius,Qin, vw):
+   #calculates resistance in a cylindrical tube with porous walls
+   #assumptions constant wall permeability and constant wall veolcity
+
+    resistance_channel=((8*mu*length)/(np.pi*channel_radius**4))*(1-((2*np.pi*channel_radius*length*vw)/2*Qin))
+
+    return resistance_channel
+
 def calc_tube_resistance(mu,radius,length):
     resistance = (8.* mu * length) / (np.pi * radius**4.);
     return resistance
@@ -60,9 +69,11 @@ def human_total_resistance(mu,Dp,porosity,vessels,terminals,boundary_conds):
         elif (vessels['vessel_type'][i] == 'Spiral_tube'):
             spiral_index = i
 
+
     print("==============================")
     print("Resistance of each vessel type")
     print("==============================")
+
 
     for i in range(0, np.size(vessels)):
         # Poiseille resistance of each vessels
@@ -72,6 +83,8 @@ def human_total_resistance(mu,Dp,porosity,vessels,terminals,boundary_conds):
         elif vessels['vessel_type'][i]=='Spiral_funnel':
             resistance[i] = calc_funnel_resistance(mu,vessels['radius'][spiral_index], vessels['radius'][i], 0.,vessels['length'][i]) / \
                             vessels['number'][i]
+        elif vessels['vessel_type'][i]=='Spiral_channel':
+            resistance[i] =calc_channel_resistance(mu,vessels['length'][i],channel_radius,Qin,vw)/vessels['number'][i]
         else:
             resistance[i] = calc_tube_resistance(mu,vessels['radius'][i],vessels['length'][i])/vessels['number'][i]
 
