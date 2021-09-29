@@ -19,11 +19,49 @@ def calc_plug_shear(mu,Dp,porosity,radius, length,flow,resistance,r_val):
     return shear,shear_at_wall
 
 
-def calc_channel_resistance(mu,length,channel_radius,Qin, vw):
-   #calculates resistance in a cylindrical tube with porous walls
-   #assumptions constant wall permeability and constant wall veolcity
+def calc_channel_resistance(mu,Dp, porosity, length,channel_rad,outer_rad):
+    K = (Dp ** 2. / 180.) * ((porosity ** 3.) / (1. - porosity) ** 2.)  # permeability
+    gamma = 1. / (1. + 2.5 * (1. - porosity))
+    delta = gamma / K
+    # special.iv(0,np.sqrt(delta) * radius) I0
+    # special.iv(1,np.sqrt(delta) * radius) I1
+    # special.kv(0,np.sqrt(delta) * radius) K0
+    # special.kv(1,np.sqrt(delta) * radius) K1
+    C2 = (-2. * K * np.sqrt(delta) * special.kv(1, np.sqrt(delta) * channel_rad) - channel_rad * special.kv(0, np.sqrt(
+        delta) * outer_rad)) * special.iv(0, np.sqrt(delta) * channel_rad) / (2. * np.sqrt(delta) * (
+                special.kv(0, np.sqrt(delta) * outer_rad) * special.iv(1, np.sqrt(delta) * channel_rad) + special.kv(1,
+                                                                                                                     np.sqrt(
+                                                                                                                         delta) * channel_rad) * special.iv(
+            0, np.sqrt(delta) * outer_rad))) \
+         - (2. * K * np.sqrt(delta) * special.iv(1, np.sqrt(delta) * channel_rad) - channel_rad * special.iv(0, np.sqrt(
+        delta) * outer_rad)) * special.kv(0, np.sqrt(delta) * channel_rad) / (2. * np.sqrt(delta) * (
+                special.kv(0, np.sqrt(delta) * outer_rad) * special.iv(1, np.sqrt(delta) * channel_rad) + special.kv(1,
+                                                                                                                     np.sqrt(
+                                                                                                                         delta) * channel_rad) * special.iv(
+            0, np.sqrt(delta) * outer_rad))) + K + channel_rad ** 2 / 4.
+    C2 = C2
+    C3 = (-2. * K * np.sqrt(delta) * special.kv(1, np.sqrt(delta) * channel_rad) - channel_rad * special.kv(0, np.sqrt(
+        delta) * outer_rad)) / (2. * np.sqrt(delta) * (
+                special.kv(0, np.sqrt(delta) * outer_rad) * special.iv(1, np.sqrt(delta) * channel_rad) + special.kv(1,
+                                                                                                                     np.sqrt(
+                                                                                                                         delta) * channel_rad) * special.iv(
+            0, np.sqrt(delta) * outer_rad)))
+    C4 = -1. * (2. * K * np.sqrt(delta) * special.iv(1, np.sqrt(delta) * channel_rad) - channel_rad * special.iv(0,
+                                                                                                                 np.sqrt(
+                                                                                                                     delta) * outer_rad)) / (
+                     2. * np.sqrt(delta) * (special.kv(0, np.sqrt(delta) * outer_rad) * special.iv(1, np.sqrt(
+                 delta) * channel_rad) + special.kv(1, np.sqrt(delta) * channel_rad) * special.iv(0, np.sqrt(
+                 delta) * outer_rad)))
 
-    resistance_channel=((8*mu*length)/(np.pi*channel_radius**4))*(1-((2*np.pi*channel_radius*length*vw)/2*Qin))
+    Q1 = ((2 * np.pi) / (mu * length)) * (C2 * channel_rad ** 2 / 2 - channel_rad ** 4 / 16)
+    Q2 = (2 * np.pi / (np.sqrt(delta) * mu * length)) * (C3 * (
+                outer_rad * special.iv(1, np.sqrt(delta) * channel_rad) - channel_rad * special.iv(1, np.sqrt(
+            delta) * channel_rad)) - C4 * (outer_rad * special.kv(1, np.sqrt(
+        delta) * outer_rad) - channel_rad * special.kv(1, np.sqrt(delta) * channel_rad)) + K * (
+                                                                     outer_rad ** 2 - channel_rad ** 2) / 2)
+
+    QT = Q1 + Q2
+    resistance_channel = 1 / QT
 
     return resistance_channel
 
@@ -79,12 +117,12 @@ def human_total_resistance(mu,Dp,porosity,vessels,terminals,boundary_conds):
         # Poiseille resistance of each vessels
         # Units of resistance are Pa.s/mm^3
         if vessels['vessel_type'][i]=='Spiral_plug':
-            resistance[i] =calc_plug_resistance(mu,Dp,porosity,vessels['radius'][i],vessels['length'][i])/vessels['number'][i]
+            resistance[i] = calc_plug_resistance(mu,Dp,porosity,vessels['radius'][i],vessels['length'][i])/vessels['number'][i]
         elif vessels['vessel_type'][i]=='Spiral_funnel':
             resistance[i] = calc_funnel_resistance(mu,vessels['radius'][spiral_index], vessels['radius'][i], 0.,vessels['length'][i]) / \
                             vessels['number'][i]
         elif vessels['vessel_type'][i]=='Spiral_channel':
-            resistance[i] =calc_channel_resistance(mu,vessels['length'][i],channel_radius,Qin,vw)/vessels['number'][i]
+            resistance[i] = calc_channel_resistance(mu,dp,vessels['length'][i],channel_rad,vessels['radius'][spiral_index])/vessels['number'][i]
         else:
             resistance[i] = calc_tube_resistance(mu,vessels['radius'][i],vessels['length'][i])/vessels['number'][i]
 
