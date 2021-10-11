@@ -87,7 +87,7 @@ def calc_funnel_resistance(mu, radius_a, radius_b, length_a,length_b):
     return resistance
 
 
-def human_total_resistance(mu,Dp,porosity,vessels,terminals,boundary_conds):
+def human_total_resistance(mu,Dp,porosity,vessels,terminals,boundary_conds,channel_rad):
     # Calculates total resistance of the uterine arteries, outputs this resistance and a venous equivalent resistance (half of arterial resistance)
     resistance = np.zeros(np.size(vessels))
     flow = np.zeros(np.size(vessels) + 1)
@@ -107,7 +107,6 @@ def human_total_resistance(mu,Dp,porosity,vessels,terminals,boundary_conds):
         elif (vessels['vessel_type'][i] == 'Spiral_tube'):
             spiral_index = i
 
-
     print("==============================")
     print("Resistance of each vessel type")
     print("==============================")
@@ -122,7 +121,8 @@ def human_total_resistance(mu,Dp,porosity,vessels,terminals,boundary_conds):
             resistance[i] = calc_funnel_resistance(mu,vessels['radius'][spiral_index], vessels['radius'][i], 0.,vessels['length'][i]) / \
                             vessels['number'][i]
         elif vessels['vessel_type'][i]=='Spiral_channel':
-            resistance[i] = calc_channel_resistance(mu,dp,vessels['length'][i],channel_rad,vessels['radius'][spiral_index])/vessels['number'][i]
+            if porosity > 0.15:
+                resistance[i] = calc_channel_resistance(mu,Dp, porosity,vessels['length'][i],channel_rad,vessels['radius'][spiral_index])/vessels['number'][i]
         else:
             resistance[i] = calc_tube_resistance(mu,vessels['radius'][i],vessels['length'][i])/vessels['number'][i]
 
