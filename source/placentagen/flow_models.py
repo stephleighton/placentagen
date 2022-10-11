@@ -72,9 +72,13 @@ def calc_channel_resistance(mu,Dp, porosity, length,channel_rad,outer_rad):
                                                                      outer_rad ** 2 - channel_rad ** 2) / 2)
 
     QT = Q1 + Q2
+
+    print ('Total flow ', QT)
+    print ('Channel flow', Q1)
+    print('Plug flow', Q2)
     resistance_channel = 1 / QT
 
-    return resistance_channel
+    return [resistance_channel]  #, Q1, Q2
 
 
 def calc_plug_resistance(mu,Dp,porosity,radius, length):
@@ -179,7 +183,7 @@ def calc_total_tension(fit_passive_params, fit_myo_params, fit_flow_params, fixe
 def diameter_from_pressure(fit_passive_params,fit_myo_params,fit_flow_params,fixed_flow_params, pressure,verbose):
         #Dp_blood is driving pressure (mmHg)
         #pressure is transmural pressure (kPa)
-        # calculates a passive diameter under zero flow conditions
+        #calculates a passive diameter under zero flow conditions
         include_passive = True
         include_flow = True
         include_myo = True
@@ -189,9 +193,9 @@ def diameter_from_pressure(fit_passive_params,fit_myo_params,fit_flow_params,fix
             include_flow = False
 
         if not include_myo and not include_flow:
-            diameter= bisection_method_diam(5.,500.,fit_passive_params,fit_myo_params,fit_flow_params,fixed_flow_params,pressure,verbose)
+            diameter= bisection_method_diam(5.,2000.,fit_passive_params,fit_myo_params,fit_flow_params,fixed_flow_params,pressure,verbose)
         else:
-            diameter_pass = bisection_method_diam(5.,500.,fit_passive_params,[0.,0.],[0.,0.],[0.,0.],pressure,verbose)
+            diameter_pass = bisection_method_diam(5.,2000.,fit_passive_params,[0.,0.],[0.,0.],[0.,0.],pressure,verbose)
             D0 = fit_passive_params[0]
             dp_blood = fixed_flow_params[2]
             reference_diameter = np.max([diameter_pass,D0])
@@ -264,7 +268,8 @@ def human_total_resistance(mu,Dp,porosity,vessels,terminals,boundary_conds,chann
     total_resistance = 0.0
     total_resistance_plus_myo = 0.
     pressure_out = np.zeros(np.size(vessels) + 1)
-
+    Qchan = 0
+    Qplug= 0
     anast_index = 0  # initialise
     radial_index = 0
     spiral_index = 0
@@ -296,7 +301,12 @@ def human_total_resistance(mu,Dp,porosity,vessels,terminals,boundary_conds,chann
                             vessels['number'][i]
         elif vessels['vessel_type'][i]=='Spiral_channel':
             if porosity > 0.15:
-                resistance[i] = calc_channel_resistance(mu,Dp, porosity,vessels['length'][i],channel_rad,vessels['radius'][i])/vessels['number'][i]
+                [resistance_plug] = calc_channel_resistance(mu,Dp, porosity,vessels['length'][i],channel_rad,vessels['radius'][i])/vessels['number'][i] #, Q1, Q2
+                resistance[i]= resistance_plug
+                #flow proportion through channel
+                #Qchan= Q1
+                #flow proportion through plug
+                #Qplug= Q2
             else: #calculate the equivalent channel resistance
                 resistance[i] = calc_tube_resistance(mu,channel_rad,vessels['length'][i])/vessels['number'][i]
         else:
@@ -464,7 +474,7 @@ def human_total_resistance(mu,Dp,porosity,vessels,terminals,boundary_conds,chann
 
 
 
-    return [total_resistance, venous_resistance, shear,resistance,flow,pressure_out]
+    return [total_resistance, venous_resistance, shear,resistance,flow,pressure_out] #,Qchan,Qplug
     
     
 def rat_total_resistance(mu,NumberPlacentae,vessels,terminals,boundary_conds,printme):
@@ -596,6 +606,6 @@ def rat_total_resistance(mu,NumberPlacentae,vessels,terminals,boundary_conds,pri
         print("================")
         print(str(total_resistance) + "Pa.mm^3/s")
 
-    return [total_resistance,venous_resistance,shear,resistance,flow,pressure_out] 
+    return [total_resistance,venous_resistance,shear,resistance,flow,pressure_out]
 
 
