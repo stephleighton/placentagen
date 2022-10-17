@@ -79,7 +79,7 @@ def calc_channel_resistance(mu,Dp, porosity, length,channel_rad,outer_rad):
     print('Plug flow', Q2)
     resistance_channel = 1 / QT
 
-    return [resistance_channel]  #, Q1, Q2
+    return [resistance_channel, Q1, Q2]  #, Q1, Q2
 
 
 def calc_plug_resistance(mu,Dp,porosity,radius, length):
@@ -321,12 +321,12 @@ def human_total_resistance(mu,Dp,porosity,vessels,terminals,boundary_conds,chann
                             vessels['number'][i]
         elif vessels['vessel_type'][i]=='Spiral_channel':
             if porosity > 0.15:
-                [resistance_plug] = calc_channel_resistance(mu,Dp, porosity,vessels['length'][i],channel_rad,vessels['radius'][i])/vessels['number'][i] #, Q1, Q2
+                [resistance_plug,Q1,Q2] = calc_channel_resistance(mu,Dp, porosity,vessels['length'][i],channel_rad,vessels['radius'][i])/vessels['number'][i] #, Q1, Q2
                 resistance[i]= resistance_plug
                 #flow proportion through channel
-                #Qchan= Q1
+                Qchan= Q1
                 #flow proportion through plug
-                #Qplug= Q2
+                Qplug= Q2
             else: #calculate the equivalent channel resistance
                 resistance[i] = calc_tube_resistance(mu,channel_rad,vessels['length'][i])/vessels['number'][i]
         else:
@@ -494,7 +494,7 @@ def human_total_resistance(mu,Dp,porosity,vessels,terminals,boundary_conds,chann
 
 
 
-    return [total_resistance, venous_resistance, shear,resistance,flow,pressure_out] #,Qchan,Qplug
+    return [total_resistance, venous_resistance, shear,resistance,flow,pressure_out, Qchan, Qplug] #,Qchan,Qplug
     
     
 def rat_total_resistance(mu,NumberPlacentae,vessels,terminals,boundary_conds,printme):
